@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
 
+async function getUserId() {
+  const { data } = await supabase.auth.getUser()
+  return data.user.id
+}
+
 export function useJobs() {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -17,9 +22,10 @@ export function useJobs() {
   useEffect(() => { fetchJobs() }, [fetchJobs])
 
   async function createJob({ name, client, ohp }) {
+    const user_id = await getUserId()
     const { data, error } = await supabase
       .from('jobs')
-      .insert({ name, client, ohp: parseFloat(ohp) || 28 })
+      .insert({ name, client, ohp: parseFloat(ohp) || 28, user_id })
       .select()
       .single()
     if (!error) setJobs(prev => [data, ...prev])
@@ -48,9 +54,10 @@ export function useEntries(jobId) {
   useEffect(() => { fetchEntries() }, [fetchEntries])
 
   async function addEntry(entry) {
+    const user_id = await getUserId()
     const { data, error } = await supabase
       .from('entries')
-      .insert(entry)
+      .insert({ ...entry, user_id })
       .select()
       .single()
     if (!error) setEntries(prev => [data, ...prev])
@@ -107,9 +114,10 @@ export function usePayments(jobId) {
   useEffect(() => { fetchPayments() }, [fetchPayments])
 
   async function addPayment({ label, amount }) {
+    const user_id = await getUserId()
     const { data, error } = await supabase
       .from('payments')
-      .insert({ job_id: jobId, label, amount: parseFloat(amount) || 0 })
+      .insert({ job_id: jobId, label, amount: parseFloat(amount) || 0, user_id })
       .select()
       .single()
     if (!error) setPayments(prev => [...prev, data])
